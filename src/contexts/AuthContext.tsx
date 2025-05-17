@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Configurar o listener de mudança de estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      (_event, currentSession) => {
         setSession(currentSession);
         if (currentSession?.user) {
           // Não chamar Supabase dentro do callback para evitar loop
@@ -50,8 +50,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(currentSession);
       if (currentSession?.user) {
         fetchUserProfile(currentSession.user.id);
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     // Limpar inscrição ao desmontar
@@ -132,6 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message || "Email ou senha incorretos.",
         variant: "destructive",
       });
+      throw error; // Re-lançar o erro para ser capturado no componente
     } finally {
       setIsLoading(false);
     }
@@ -158,12 +160,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data.user) {
-        // Redirecionar para onboarding
-        navigate('/onboarding');
-        
+        // Não redirecionar automaticamente para permitir que o usuário veja a mensagem de confirmação
         toast({
           title: "Registro bem-sucedido",
-          description: "Bem-vinda ao Florescer!",
+          description: "Por favor, verifique seu email para confirmar sua conta.",
         });
       }
     } catch (error: any) {
@@ -173,6 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message || "Não foi possível criar sua conta. Tente novamente.",
         variant: "destructive",
       });
+      throw error; // Re-lançar o erro para ser capturado no componente
     } finally {
       setIsLoading(false);
     }

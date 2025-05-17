@@ -4,15 +4,25 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AlertCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password);
+    setError('');
+    
+    try {
+      await login(email, password);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao fazer login. Verifique suas credenciais e tente novamente.');
+    }
   };
 
   return (
@@ -22,11 +32,18 @@ const Login = () => {
         <p className="mt-2 text-gray-600">Bem-estar e autoconhecimento na menopausa</p>
       </div>
       
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email
-          </label>
+          </Label>
           <Input
             id="email"
             type="email"
@@ -40,9 +57,9 @@ const Login = () => {
         
         <div className="space-y-2">
           <div className="flex justify-between">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Senha
-            </label>
+            </Label>
             <Link to="/reset-password" className="text-sm text-florescer-primary hover:underline">
               Esqueceu a senha?
             </Link>
