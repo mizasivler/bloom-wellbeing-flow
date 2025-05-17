@@ -75,7 +75,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data) {
-        setUser(data as UserData);
+        // Buscar também o email do usuário da sessão atual
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        // Combinar os dados do perfil com o email do usuário
+        setUser({
+          ...data,
+          email: authUser?.email || '',
+        } as UserData);
       }
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
