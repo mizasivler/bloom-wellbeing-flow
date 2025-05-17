@@ -9,7 +9,135 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      emotion_diary: {
+        Row: {
+          content: string
+          created_at: string | null
+          date: string | null
+          energy_level: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          date?: string | null
+          energy_level?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          date?: string | null
+          energy_level?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emotion_diary_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emotional_history: {
+        Row: {
+          created_at: string | null
+          date: string | null
+          id: string
+          mood: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          mood: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          mood?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emotional_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          completed_rituals: number | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          mood: string | null
+          quiz_result: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          completed_rituals?: number | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          mood?: string | null
+          quiz_result?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          completed_rituals?: number | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          mood?: string | null
+          quiz_result?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      saved_messages: {
+        Row: {
+          id: string
+          message: string
+          saved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message: string
+          saved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message?: string
+          saved_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

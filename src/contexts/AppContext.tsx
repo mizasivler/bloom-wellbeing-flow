@@ -2,14 +2,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { MoodType, RitualStatus, ProductType } from '@/types';
 import { useAuth } from './AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 interface AppContextType {
   userMood: MoodType | null;
   setUserMood: (mood: MoodType) => void;
   ritualStatus: RitualStatus;
-  completeRitual: () => void;
+  completeRitual: () => Promise<void>;
   savedMessages: string[];
-  saveMessage: (message: string) => void;
+  saveMessage: (message: string) => Promise<void>;
   products: ProductType[];
 }
 
@@ -81,7 +83,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [savedMessages, setSavedMessages] = useState<string[]>([]);
   const [products] = useState<ProductType[]>(defaultProducts);
 
-  // Initialize data from user when auth changes
+  // Inicializar dados do usuário quando auth muda
   useEffect(() => {
     if (user) {
       if (user.mood) {
@@ -96,35 +98,137 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         });
       }
       
-      // In a real app, we would fetch saved messages from Supabase
-      setSavedMessages([
-        "Hoje você não precisa ser forte. Só precisa ser real.",
-        "Sua vulnerabilidade não é fraqueza, é coragem em sua forma mais pura."
-      ]);
+      // Buscar mensagens salvas do Supabase
+      fetchSavedMessages();
     }
   }, [user]);
 
-  const completeRitual = () => {
-    setRitualStatus(prev => ({
-      ...prev,
-      completed: true,
-      day: Math.min(prev.day + 1, prev.totalDays)
-    }));
+  // Função para buscar mensagens salvas
+  const fetchSavedMessages = async () => {
+    if (!user) return;
     
-    // In a real app, we'd update this in Supabase
+    try {
+      const { data, error } = await supabase
+        .from('saved_messages')
+        .select('message')
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error("Erro ao buscar mensagens salvas:", error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const messages = data.map(item => item.message);
+        setSavedMessages(messages);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar mensagens salvas:", error);
+    }
   };
 
-  const saveMessage = (message: string) => {
-    if (!savedMessages.includes(message)) {
-      setSavedMessages(prev => [...prev, message]);
+  // Atualizar o humor do usuário e salvar no Supabase
+  const handleMoodChange = async (mood: MoodType) => {
+    setUserMood(mood);
+    
+    if (user) {
+      try {
+        // Atualizar o mood no perfil do usuário
+        await supabase
+          .from('profiles')
+          .update({ mood })
+          .eq('id', user.id);
+        
+        // Adicionar ao histórico emocional
+        await supabase
+          .from('emotional_history')
+          .insert({
+            user_id: user.id,
+            mood
+          });
+      } catch (error) {
+        console.error("Erro ao atualizar humor:", error);
+      }
+    }
+  };
+
+  // Completar ritual e atualizar no Supabase
+  const completeRitual = async () => {
+    if (!user) return;
+    
+    try {
+      const newDay = Math.min(ritualStatus.day + 1, ritualStatus.totalDays);
       
-      // In a real app, we'd save this to Supabase
+      // Atualizar o estado local
+      setRitualStatus(prev => ({
+        ...prev,
+        completed: true,
+        day: newDay
+      }));
+      
+      // Atualizar no banco de dados
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          completed_rituals: newDay - 1 
+        })
+        .eq('id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error("Erro ao completar ritual:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar seu progresso. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Salvar mensagem no Supabase
+  const saveMessage = async (message: string) => {
+    if (!user) return;
+    
+    if (!savedMessages.includes(message)) {
+      try {
+        // Adicionar à lista local
+        setSavedMessages(prev => [...prev, message]);
+        
+        // Salvar no Supabase
+        const { error } = await supabase
+          .from('saved_messages')
+          .insert({
+            user_id: user.id,
+            message
+          });
+        
+        if (error) {
+          throw error;
+        }
+        
+        toast({
+          title: "Mensagem salva",
+          description: "A mensagem foi adicionada às suas favoritas.",
+        });
+      } catch (error) {
+        console.error("Erro ao salvar mensagem:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível salvar a mensagem. Tente novamente.",
+          variant: "destructive"
+        });
+        
+        // Remover da lista local se falhou no servidor
+        setSavedMessages(prev => prev.filter(m => m !== message));
+      }
     }
   };
 
   const value = {
     userMood,
-    setUserMood,
+    setUserMood: handleMoodChange,
     ritualStatus,
     completeRitual,
     savedMessages,

@@ -1,19 +1,53 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { generateRitualMessage } from "@/services/messageService";
+import { Loader2 } from "lucide-react";
 
 const RitualOfTheDay = () => {
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isLoadingMessage, setIsLoadingMessage] = useState(true);
+  
   const { user } = useAuth();
   const { userMood, completeRitual, ritualStatus } = useApp();
   const navigate = useNavigate();
 
-  // Helper function to get ritual content based on mood
+  // Buscar mensagem personalizada quando o componente carregar
+  useEffect(() => {
+    const fetchRitualMessage = async () => {
+      if (userMood) {
+        try {
+          setIsLoadingMessage(true);
+          const personalizedMessage = await generateRitualMessage({
+            mood: userMood,
+            quizResult: user?.quiz_result as any,
+            dayNumber: ritualStatus.day,
+            userName: user?.full_name
+          });
+          
+          setMessage(personalizedMessage);
+        } catch (error) {
+          console.error('Erro ao buscar mensagem personalizada:', error);
+          setMessage(getRitualContent().message);
+        } finally {
+          setIsLoadingMessage(false);
+        }
+      } else {
+        setMessage(getRitualContent().message);
+        setIsLoadingMessage(false);
+      }
+    };
+    
+    fetchRitualMessage();
+  }, [userMood, user, ritualStatus.day]);
+
+  // Função auxiliar para obter conteúdo do ritual com base no humor
   const getRitualContent = () => {
     switch (userMood) {
       case "cansada":
@@ -67,7 +101,7 @@ const RitualOfTheDay = () => {
     setAudioPlaying(!audioPlaying);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (ritualStatus.completed) {
       toast({
         title: "Ritual já concluído",
@@ -77,7 +111,7 @@ const RitualOfTheDay = () => {
     }
 
     setCompleted(true);
-    completeRitual();
+    await completeRitual();
     
     setTimeout(() => {
       toast({
@@ -95,13 +129,19 @@ const RitualOfTheDay = () => {
         <p className="text-gray-600">Dia {ritualStatus.day} de {ritualStatus.totalDays}</p>
       </div>
 
-      {/* Emotional Message */}
+      {/* Mensagem Emocional */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h2 className="font-lora text-lg font-medium text-florescer-primary mb-2">Mensagem Emocional</h2>
-        <p className="text-gray-700 italic">"{ritual.message}"</p>
+        {isLoadingMessage ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-florescer-primary" />
+          </div>
+        ) : (
+          <p className="text-gray-700 italic">"{message || ritual.message}"</p>
+        )}
       </div>
 
-      {/* Morning Audio */}
+      {/* Áudio Matinal */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h2 className="font-lora text-lg font-medium text-florescer-primary mb-4">Áudio Matinal da Célia</h2>
         
@@ -137,25 +177,25 @@ const RitualOfTheDay = () => {
         </div>
       </div>
 
-      {/* Food Suggestions */}
+      {/* Sugestões alimentares */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h2 className="font-lora text-lg font-medium text-florescer-primary mb-2">Mini-Cardápio Funcional</h2>
         <p className="text-gray-700">{ritual.food}</p>
       </div>
 
-      {/* Movement Suggestion */}
+      {/* Sugestões de movimento */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h2 className="font-lora text-lg font-medium text-florescer-primary mb-2">Dica de Movimento</h2>
         <p className="text-gray-700">{ritual.movement}</p>
       </div>
 
-      {/* Emotional Task */}
+      {/* Tarefa emocional */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h2 className="font-lora text-lg font-medium text-florescer-primary mb-2">Tarefa Emocional</h2>
         <p className="text-gray-700">{ritual.task}</p>
       </div>
 
-      {/* Complete Button */}
+      {/* Botão de completar */}
       <div className="py-4">
         <Button
           className={`w-full py-6 text-lg ${completed ? 'bg-florescer-secondary' : 'florescer-button'}`}

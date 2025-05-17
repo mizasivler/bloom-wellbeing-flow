@@ -1,127 +1,138 @@
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
-import { Heart } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { generateCeliaMessage } from "@/services/messageService";
 
 const MessageFromCelia = () => {
+  const [message, setMessage] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [savedMessages, setSavedMessages] = useState<string[]>([]);
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
-  const messages = [
-    "Você não precisa carregar o mundo sozinha. Permita-se receber ajuda e apoio.",
-    "Seu corpo não está contra você. Ele está se adaptando. Tenha paciência com essa transição.",
-    "A menopausa não é o fim de nada. É uma passagem para uma nova fase poderosa da sua vida.",
-    "Suas emoções são válidas. Não deixe ninguém minimizar o que você sente.",
-    "Hoje, celebre uma pequena vitória, por menor que pareça.",
-    "Lembre-se de respirar profundamente quando a ansiedade vier. Você é mais forte que ela.",
-    "A vulnerabilidade é uma forma de coragem.",
-  ];
+  const { user } = useAuth();
+  const { userMood, savedMessages, saveMessage } = useApp();
 
+  // Buscar mensagem personalizada quando o componente carregar
   useEffect(() => {
-    document.title = "Florescer - Mensagem da Célia";
+    const fetchCeliaMessage = async () => {
+      if (userMood) {
+        try {
+          setIsLoading(true);
+          const personalizedMessage = await generateCeliaMessage({
+            mood: userMood,
+            quizResult: user?.quiz_result as any,
+            dayNumber: user?.completed_rituals || 1,
+            userName: user?.full_name
+          });
+          
+          setMessage(personalizedMessage);
+        } catch (error) {
+          console.error('Erro ao buscar mensagem personalizada:', error);
+          setMessage("Você é mais forte do que pensa, mais sábia do que acredita, e mais amada do que imagina.");
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setMessage("Você é mais forte do que pensa, mais sábia do que acredita, e mais amada do que imagina.");
+        setIsLoading(false);
+      }
+    };
     
-    // Get a random message index when component mounts
-    setCurrentMessageIndex(Math.floor(Math.random() * messages.length));
+    fetchCeliaMessage();
+  }, [userMood, user]);
+
+  const handleSaveMessage = async () => {
+    if (!message) return;
     
-    // Mock data for saved messages - in a real app, this would come from a database
-    setSavedMessages([
-      "Suas emoções são válidas. Não deixe ninguém minimizar o que você sente.",
-      "A vulnerabilidade é uma forma de coragem."
-    ]);
-  }, []);
-  
-  const togglePlay = () => {
+    setIsSaving(true);
+    await saveMessage(message);
+    setIsSaving(false);
+  };
+
+  const toggleAudio = () => {
     setIsPlaying(!isPlaying);
-    
-    // In a real app, this would play/pause an audio file
-    setTimeout(() => {
-      setIsPlaying(false);
-    }, 5000);
+    // Aqui seria implementada a lógica de síntese de voz ou reprodução de áudio
   };
-  
-  const saveMessage = () => {
-    const messageToSave = messages[currentMessageIndex];
-    if (!savedMessages.includes(messageToSave)) {
-      setSavedMessages([...savedMessages, messageToSave]);
-      toast({
-        title: "Mensagem salva",
-        description: "A mensagem foi salva em suas favoritas.",
-      });
-    } else {
-      toast({
-        title: "Mensagem já salva",
-        description: "Esta mensagem já está em suas favoritas.",
-      });
-    }
-  };
-  
-  const currentMessage = messages[currentMessageIndex];
-  const isCurrentMessageSaved = savedMessages.includes(currentMessage);
-  
+
+  const isMessageSaved = message && savedMessages.includes(message);
+
   return (
-    <div className="space-y-6 pb-20 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-20">
       <div>
         <h1 className="text-2xl font-lora font-semibold text-florescer-text">Mensagem da Célia</h1>
-        <p className="text-gray-600">Inspiração e apoio diário</p>
+        <p className="text-gray-600">Uma reflexão diária para inspirar seu dia</p>
       </div>
-      
-      {/* Today's Message */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-full bg-florescer-primary/10 flex items-center justify-center">
-            <span className="text-florescer-primary text-xl">🧠</span>
-          </div>
-          <div>
-            <h2 className="font-lora text-lg font-medium">Célia diz:</h2>
-            <p className="text-gray-500 text-sm">Mensagem de hoje</p>
+
+      {/* Mensagem do dia */}
+      <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-florescer-light flex items-center justify-center">
+            <span className="text-2xl">👩‍🦱</span>
           </div>
         </div>
         
-        <div className="bg-florescer-light/50 rounded-xl p-5 text-center">
-          <p className="text-florescer-text text-lg font-lora italic">"{currentMessage}"</p>
-        </div>
-        
-        <div className="flex space-x-3">
-          <Button
-            onClick={togglePlay}
-            variant="outline"
-            className="flex-1"
-          >
-            <span className="mr-2">{isPlaying ? "⏸️" : "🔊"}</span>
-            {isPlaying ? "Pausar" : "Ouvir em Áudio"}
-          </Button>
+        <div className="text-center">
+          <h2 className="font-lora text-lg font-medium text-florescer-primary mb-4">Sua mensagem de hoje</h2>
           
-          <Button
-            onClick={saveMessage}
-            variant="outline"
-            className={`flex-1 ${isCurrentMessageSaved ? 'bg-florescer-primary/10 text-florescer-primary' : ''}`}
-          >
-            <Heart size={16} className={`mr-2 ${isCurrentMessageSaved ? 'fill-florescer-primary' : ''}`} />
-            {isCurrentMessageSaved ? "Salva" : "Salvar"}
-          </Button>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-florescer-primary" />
+            </div>
+          ) : (
+            <p className="text-gray-700 text-lg italic">"<span id="messageText">{message}</span>"</p>
+          )}
+          
+          <div className="mt-6 space-y-3">
+            <Button 
+              variant="outline" 
+              className="w-full border-florescer-secondary text-florescer-secondary hover:bg-florescer-light"
+              onClick={toggleAudio}
+              disabled={isLoading}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"></path>
+                <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+              </svg>
+              {isPlaying ? "Pausar Áudio" : "Ouvir em Áudio"}
+            </Button>
+            
+            <Button 
+              className="w-full florescer-button-secondary"
+              onClick={handleSaveMessage}
+              disabled={isMessageSaved || isLoading || isSaving}
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+              )}
+              {isMessageSaved ? "Mensagem Salva" : "Salvar no Coração 💗"}
+            </Button>
+          </div>
         </div>
       </div>
-      
-      {/* Saved Messages */}
-      <div className="space-y-4">
-        <h2 className="font-lora text-lg font-medium text-florescer-primary">Mensagens Salvas</h2>
+
+      {/* Mensagens salvas */}
+      <div className="bg-white rounded-2xl shadow-md p-6">
+        <h2 className="font-lora text-lg font-medium text-florescer-primary mb-4">Mensagens Salvas</h2>
         
-        {savedMessages.length > 0 ? (
-          <div className="space-y-3">
-            {savedMessages.map((message, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-sm p-4">
-                <p className="text-gray-700 italic">"{message}"</p>
+        {savedMessages.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Você ainda não salvou nenhuma mensagem. Quando encontrar uma mensagem especial, salve-a aqui.</p>
+        ) : (
+          <div className="space-y-4">
+            {savedMessages.map((savedMsg, index) => (
+              <div key={index} className="p-4 bg-florescer-light rounded-lg">
+                <p className="italic text-gray-700">"{savedMsg}"</p>
               </div>
             ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-            <p className="text-gray-500">Nenhuma mensagem salva ainda</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Clique em "Salvar" para guardar mensagens especiais
-            </p>
           </div>
         )}
       </div>
