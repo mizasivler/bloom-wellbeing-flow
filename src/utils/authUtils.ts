@@ -37,35 +37,67 @@ export const fetchUserProfile = async (userId: string): Promise<UserData | null>
 
 // Login with email and password using Supabase Auth
 export const loginWithEmailAndPassword = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    console.log("Calling Supabase auth.signInWithPassword");
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
+    if (error) {
+      console.error("Supabase login error:", error);
+      
+      // Translate common errors to Portuguese
+      if (error.message.includes("Invalid login credentials")) {
+        throw new Error("Credenciais inválidas. Verifique seu email e senha.");
+      } else if (error.message.includes("Email not confirmed")) {
+        throw new Error("Email não confirmado. Por favor verifique sua caixa de entrada.");
+      }
+      
+      throw error;
+    }
+    
+    console.log("Login successful, data:", data);
+    return data;
+  } catch (error) {
+    console.error("Login failed:", error);
     throw error;
   }
-
-  return data;
 };
 
 // Register new user with email and password
 export const registerUser = async (email: string, password: string, name: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: name,
+  try {
+    console.log("Calling Supabase auth.signUp");
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        },
       },
-    },
-  });
+    });
 
-  if (error) {
+    if (error) {
+      console.error("Supabase registration error:", error);
+      
+      // Translate common errors to Portuguese
+      if (error.message.includes("User already registered")) {
+        throw new Error("Este email já está registrado.");
+      } else if (error.message.includes("Password should be at least")) {
+        throw new Error("A senha deve ter pelo menos 6 caracteres.");
+      }
+      
+      throw error;
+    }
+
+    console.log("Registration successful, data:", data);
+    return data;
+  } catch (error) {
+    console.error("Registration failed:", error);
     throw error;
   }
-
-  return data;
 };
 
 // Update user profile data

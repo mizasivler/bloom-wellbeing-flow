@@ -22,15 +22,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Initialize and monitor session
   useEffect(() => {
+    console.log("Setting up auth state listener");
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, currentSession) => {
+      (event, currentSession) => {
+        console.log("Auth state changed:", event, currentSession?.user?.email);
         setSession(currentSession);
         if (currentSession?.user) {
           // Avoid Supabase call inside callback to prevent loop
           setTimeout(() => {
+            console.log("Fetching profile for user:", currentSession.user.id);
             fetchUserProfile(currentSession.user.id).then(profileData => {
               setUser(profileData);
+              console.log("Profile data loaded:", profileData);
             });
           }, 0);
         } else {
@@ -41,10 +45,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Check for existing session on mount
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", currentSession?.user?.email);
       setSession(currentSession);
       if (currentSession?.user) {
         fetchUserProfile(currentSession.user.id).then(profileData => {
           setUser(profileData);
+          console.log("Initial profile data loaded:", profileData);
           setIsLoading(false);
         });
       } else {
@@ -62,9 +68,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log("Attempting login for:", email);
       const data = await loginWithEmailAndPassword(email, password);
 
       if (data.user) {
+        console.log("Login successful for:", email);
         // Check if first login (determined by quiz result)
         const { data: profileData } = await supabase
           .from('profiles')
@@ -73,6 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
 
         const isFirstLogin = !profileData?.quiz_result;
+        console.log("Is first login:", isFirstLogin);
 
         if (isFirstLogin) {
           navigate('/onboarding');
@@ -95,6 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (email: string, password: string, name: string) => {
     try {
       setIsLoading(true);
+      console.log("Attempting registration for:", email, name);
       await registerUser(email, password, name);
       displayAuthToast('register', true);
     } catch (error: any) {

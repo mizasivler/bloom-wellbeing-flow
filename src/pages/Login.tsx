@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { AlertCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/components/ui/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,8 +19,14 @@ const Login = () => {
     e.preventDefault();
     setError('');
     
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos.');
+      return;
+    }
+    
     try {
       await login(email, password);
+      // Success will be handled by the AuthProvider via toast
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Erro ao fazer login. Verifique suas credenciais e tente novamente.');
