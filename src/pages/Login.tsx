@@ -21,6 +21,7 @@ const Login = () => {
     try {
       await login(email, password);
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message || 'Erro ao fazer login. Verifique suas credenciais e tente novamente.');
     }
   };

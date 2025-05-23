@@ -30,6 +30,7 @@ const Register = () => {
       await register(email, password, name);
       setSuccess('Cadastro realizado com sucesso! Verifique seu email para confirmação.');
     } catch (err: any) {
+      console.error('Register error:', err);
       const errorMsg = err.message || 'Erro ao criar conta. Tente novamente.';
       setError(errorMsg);
     }

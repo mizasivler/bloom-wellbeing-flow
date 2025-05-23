@@ -35,7 +35,7 @@ export const fetchUserProfile = async (userId: string): Promise<UserData | null>
   }
 };
 
-// Login with email and password
+// Login with email and password using Supabase Auth
 export const loginWithEmailAndPassword = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -49,7 +49,7 @@ export const loginWithEmailAndPassword = async (email: string, password: string)
   return data;
 };
 
-// Register new user with email, password and name
+// Register new user with email and password
 export const registerUser = async (email: string, password: string, name: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
