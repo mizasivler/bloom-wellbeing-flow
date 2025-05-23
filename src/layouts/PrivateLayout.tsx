@@ -1,10 +1,9 @@
-
 import { Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Home, User, Heart, BookOpen, Moon, ShoppingBag, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 const PrivateLayout = () => {
   const location = useLocation();

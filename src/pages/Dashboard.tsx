@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useApp } from '@/contexts/AppContext';
 import { Heart, Calendar, BookOpen, MessageSquare, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
